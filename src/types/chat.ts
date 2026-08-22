@@ -20,6 +20,7 @@ export interface IngestResponse {
   message: string;
   status: string;
   filename?: string;
+  tenant_id?: string;
 }
 
 export interface IngestTask {
@@ -29,6 +30,7 @@ export interface IngestTask {
   timestamp: string;
   message?: string;
   fileSize?: string;
+  tenant_id?: string;
 }
 
 export interface VectorContextItem {
@@ -62,6 +64,8 @@ export interface ChatMessage {
   sources?: Record<string, unknown>;
   timestamp: string;
   isError?: boolean;
+  tenant_id?: string;
+  session_id?: string;
 }
 
 export interface SendChatResponse {
@@ -72,4 +76,33 @@ export interface SendChatResponse {
   graph_context?: (string | GraphContextItem)[];
   sources?: Record<string, unknown>;
   question?: string;
+  session_id?: string;
+  tenant_id?: string;
+}
+
+export interface TenantInfo {
+  id: string;
+  name: string;
+  plan: 'Starter' | 'Pro' | 'Enterprise';
+  documentsCount: number;
+  vectorsCount: number;
+  graphNodesCount: number;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  avatarUrl?: string;
+  tenant_id: string;
+  role: 'Admin' | 'Member' | 'Viewer';
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  timestamp: string;
+  category: 'Today' | 'Yesterday' | 'Previous 7 Days';
+  tag?: string;
+  tenant_id: string;
 }

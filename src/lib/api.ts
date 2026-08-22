@@ -98,10 +98,15 @@ export async function checkHealth(): Promise<HealthStatus> {
   };
 }
 
+export interface UploadDocumentOptions {
+  tenant_id?: string;
+  token?: string;
+}
+
 /**
- * Upload PDF document for asynchronous ingestion via Celery worker.
+ * Upload PDF document for asynchronous ingestion via Celery worker with multi-tenant isolation.
  */
-export async function uploadDocument(file: File): Promise<IngestResponse> {
+export async function uploadDocument(file: File, options?: UploadDocumentOptions): Promise<IngestResponse> {
   if (!file) {
     throw new ApiError('No file selected for upload.');
   }
@@ -112,14 +117,22 @@ export async function uploadDocument(file: File): Promise<IngestResponse> {
 
   const baseUrls = getBaseUrls();
   let lastError: Error | null = null;
+  const tenantId = options?.tenant_id || 'tenant_default';
 
   for (const baseUrl of baseUrls) {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('tenant_id', tenantId);
+
+    const headers: Record<string, string> = {};
+    if (options?.token) {
+      headers['Authorization'] = `Bearer ${options.token}`;
+    }
 
     try {
       const res = await fetch(`${baseUrl}/ingest/`, {
         method: 'POST',
+        headers,
         body: formData,
       });
 
@@ -132,9 +145,10 @@ export async function uploadDocument(file: File): Promise<IngestResponse> {
 
       return {
         task_id: data.task_id || 'unknown-task-id',
-        message: data.message || `File ${file.name} uploaded successfully`,
+        message: data.message || `File ${file.name} uploaded successfully for tenant ${tenantId}`,
         status: data.status || 'processing',
         filename: file.name,
+        tenant_id: tenantId,
       };
     } catch (err: unknown) {
       if (err instanceof ApiError) throw err;
@@ -145,10 +159,19 @@ export async function uploadDocument(file: File): Promise<IngestResponse> {
   throw new ApiError(lastError?.message || 'Network error during file upload to backend.');
 }
 
+export interface SendChatMessageOptions {
+  session_id?: string;
+  tenant_id?: string;
+  token?: string;
+}
+
 /**
- * Send query to LangGraph / Redis Semantic Cache Chat API.
+ * Send query to LangGraph / Redis Semantic Cache Chat API with tenant_id and session_id.
  */
-export async function sendChatMessage(question: string): Promise<SendChatResponse> {
+export async function sendChatMessage(
+  question: string,
+  options?: SendChatMessageOptions
+): Promise<SendChatResponse> {
   const trimmed = question.trim();
   if (!trimmed) {
     throw new ApiError('Question cannot be empty.');
@@ -156,16 +179,27 @@ export async function sendChatMessage(question: string): Promise<SendChatRespons
 
   const baseUrls = getBaseUrls();
   let lastError: Error | null = null;
+  const tenantId = options?.tenant_id || 'tenant_default';
+  const sessionId = options?.session_id || `sess_${Date.now()}`;
 
   for (const baseUrl of baseUrls) {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (options?.token) {
+        headers['Authorization'] = `Bearer ${options.token}`;
+      }
+
       const res = await fetch(`${baseUrl}/chat/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ question: trimmed }),
+        headers,
+        body: JSON.stringify({
+          question: trimmed,
+          tenant_id: tenantId,
+          session_id: sessionId,
+        }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -189,6 +223,8 @@ export async function sendChatMessage(question: string): Promise<SendChatRespons
         graph_context: graphCtx,
         sources: data.sources || {},
         question: data.question || trimmed,
+        session_id: sessionId,
+        tenant_id: tenantId,
       };
     } catch (err: unknown) {
       if (err instanceof ApiError) throw err;

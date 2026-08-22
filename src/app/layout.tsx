@@ -1,21 +1,22 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
+import { Providers } from './providers';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "Enterprise GraphRAG Intelligence Engine",
-  description: "Stateful LangGraph Hybrid Search Engine with Redis Semantic Caching, Qdrant Vector DB, and Neo4j Knowledge Graph.",
-  keywords: ["GraphRAG", "LangGraph", "Qdrant", "Neo4j", "Redis", "Celery", "Enterprise AI"],
+  title: 'Agentic GraphRag Enterprise Engine • Multi-Tenant SaaS',
+  description: 'AI Chat Dashboard with LangGraph Agentic Search, Redis Semantic Caching, Qdrant Vector Isolation & Neo4j Knowledge Graph.',
+  keywords: ['Agentic GraphRag', 'Enterprise Engine', 'Multi-Tenant', 'LangGraph', 'Qdrant', 'Neo4j', 'Redis', 'Celery'],
 };
 
 export default function RootLayout({
@@ -24,9 +25,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark h-full antialiased ${geistSans.variable} ${geistMono.variable}`}>
-      <body className="h-full bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
-        {children}
+    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full`}>
+      <body className="h-full bg-background text-foreground flex flex-col font-sans overflow-hidden antialiased">
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
