@@ -24,6 +24,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   LogOut,
+  LogIn,
+  Mail,
   User,
   PanelLeftClose,
   PanelLeftOpen
@@ -211,8 +213,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <button
             onClick={() => openAuthModal('login')}
-            className="relative w-10 h-10 rounded-2xl overflow-hidden border-2 border-border hover:border-blue-500 transition-colors"
-            title={`Tenant: ${activeTenant.name}`}
+            className="relative w-10 h-10 rounded-2xl overflow-hidden border-2 border-border hover:border-blue-500 transition-colors flex items-center justify-center group"
+            title={user ? `Signed in as ${user.email}` : 'Guest Mode — Click to Sign In'}
           >
             {user?.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -221,10 +223,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 alt={user.name}
                 className="w-full h-full object-cover"
               />
-            ) : (
+            ) : user ? (
               <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                {user?.name ? user.name.charAt(0) : 'U'}
+                {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
               </div>
+            ) : (
+              <div className="w-full h-full bg-muted/60 flex items-center justify-center text-muted-foreground group-hover:text-foreground">
+                <User className="w-5 h-5" />
+              </div>
+            )}
+            {user && (
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-card" />
             )}
           </button>
         </div>
@@ -374,6 +383,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {renderHealthItem('Neo4j Graph', health?.details.neo4j, Network)}
             {renderHealthItem('Redis Cache', health?.details.redis, Clock)}
           </div>
+        </div>
+
+        {/* User Account & Authentication Status Card */}
+        <div className="p-3 border-t border-border bg-card/90">
+          {user ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-muted/40 border border-border/80">
+                <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
+                  {user.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-card" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs font-semibold text-foreground truncate leading-tight">
+                      {user.name || 'Authenticated User'}
+                    </p>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                      {user.role || 'Member'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5 text-[11px] text-muted-foreground">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="truncate font-mono text-[10px]">{user.email}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={logout}
+                className="w-full py-2 px-3 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-[0.99]"
+                title="Log out of current account"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Log Out</span>
+              </button>
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-muted/40 border border-border/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="text-xs font-semibold text-foreground">Guest Session</span>
+                </div>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-400/10 text-amber-600 dark:text-amber-400 border border-amber-400/20">
+                  Temporary
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Log in with Google or email to save your chat history and sync across devices.
+              </p>
+              <button
+                onClick={() => openAuthModal('login')}
+                className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/20 cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In / Register</span>
+              </button>
+            </div>
+          )}
         </div>
 
       </div>

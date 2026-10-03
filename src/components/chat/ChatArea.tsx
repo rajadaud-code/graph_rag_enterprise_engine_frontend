@@ -23,7 +23,9 @@ import {
   ThumbsDown,
   UploadCloud,
   Share2,
-  Bookmark
+  Bookmark,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 import { ChatMessage, VectorContextItem, GraphContextItem } from '@/types/chat';
 
@@ -44,7 +46,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   onOpenIngestModal,
   sessionTitle = 'Exploring Knowledge Graph & Vectors',
 }) => {
-  const { tenantId, activeTenant } = useAuth();
+  const { user, tenantId, activeTenant, logout, openAuthModal } = useAuth();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedContexts, setExpandedContexts] = useState<Record<string, boolean>>({});
   const [contextTabs, setContextTabs] = useState<Record<string, 'vector' | 'graph'>>({});
@@ -182,6 +184,46 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {/* User Auth Status Pill */}
+          {user ? (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-card border border-border shadow-xs">
+              <div className="relative w-6 h-6 rounded-full overflow-hidden bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                {user.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span>{user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}</span>
+                )}
+                <span className="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-card" />
+              </div>
+              <div className="hidden sm:flex flex-col text-left leading-none">
+                <span className="text-[11px] font-semibold text-foreground truncate max-w-[140px]">{user.name || 'User'}</span>
+                <span className="text-[9px] text-muted-foreground font-mono truncate max-w-[140px]">{user.email}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="p-1 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                title={`Sign out (${user.email})`}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-400/10 text-amber-600 dark:text-amber-400 border border-amber-400/20 text-[10px] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                Guest Mode
+              </span>
+              <button
+                onClick={() => openAuthModal('login')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-xs cursor-pointer active:scale-[0.99]"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+            </div>
+          )}
+
           <button
             onClick={onOpenIngestModal}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 transition-colors"

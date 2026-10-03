@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useSession, signOut, signIn } from 'next-auth/react';
 import { TenantInfo, UserProfile } from '@/types/chat';
 import { resetGuestSessionId } from '@/lib/guestSession';
 
@@ -14,6 +15,7 @@ interface AuthContextType {
   login: (email: string, password?: string, chosenTenantId?: string) => Promise<boolean>;
   register: (name: string, email: string, password?: string, tenantName?: string) => Promise<boolean>;
   logout: () => void;
+  signInWithGoogle: () => Promise<void>;
   switchTenant: (newTenantId: string) => void;
   isAuthModalOpen: boolean;
   authMode: 'login' | 'register';
@@ -48,43 +50,72 @@ const DEFAULT_TENANTS: TenantInfo[] = [
   },
 ];
 
-const DEFAULT_USER: UserProfile = {
-  id: 'usr_enterprise_01',
-  email: 'admin@acme-corp.ai',
-  name: 'Alex Rivera',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
-  tenant_id: 'tenant_acme_01',
-  role: 'Admin',
-};
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 const STORAGE_KEYS = {
   TOKEN: 'graphrag_auth_token',
   USER: 'graphrag_auth_user',
   TENANT_ID: 'graphrag_tenant_id',
 };
 
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(DEFAULT_USER);
-  const [token, setToken] = useState<string | null>('jwt_mock_token_secure_enterprise_2026');
+  const { data: nextAuthSession } = useSession();
+
+  // Initial state: Start as Guest (null) until session or localStorage proves authenticated
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [tenantId, setTenantId] = useState<string>('tenant_acme_01');
   const [availableTenants] = useState<TenantInfo[]>(DEFAULT_TENANTS);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
-  // Load from localStorage on mount
+  // 1. Sync from NextAuth session (e.g. Google Sign-In or Credentials)
+  useEffect(() => {
+    if (nextAuthSession?.user?.email) {
+      const email = nextAuthSession.user.email;
+      const name = nextAuthSession.user.name || email.split('@')[0];
+      const avatarUrl = nextAuthSession.user.image || undefined;
+      const customToken =
+        (nextAuthSession.user as { accessToken?: string }).accessToken ||
+        `jwt_oauth_${Date.now()}`;
+      const customTenant =
+        (nextAuthSession.user as { tenant_id?: string }).tenant_id || tenantId || 'tenant_acme_01';
+
+      const authenticatedUser: UserProfile = {
+        id: (nextAuthSession.user as { id?: string }).id || `usr_${email}`,
+        email,
+        name,
+        avatarUrl,
+        tenant_id: customTenant,
+        role: 'Admin',
+      };
+
+      setUser(authenticatedUser);
+      setToken(customToken);
+      setTenantId(customTenant);
+
+      try {
+        localStorage.setItem(STORAGE_KEYS.TOKEN, customToken);
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(authenticatedUser));
+        localStorage.setItem(STORAGE_KEYS.TENANT_ID, customTenant);
+      } catch {}
+    }
+  }, [nextAuthSession, tenantId]);
+
+  // 2. Load from localStorage on mount (for persistent credentials sessions)
   useEffect(() => {
     try {
       const savedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
       const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
       const savedTenantId = localStorage.getItem(STORAGE_KEYS.TENANT_ID);
 
-      if (savedToken) setToken(savedToken);
-      if (savedUser) setUser(JSON.parse(savedUser));
-      if (savedTenantId) setTenantId(savedTenantId);
+      if (savedToken && savedUser) {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
+        if (savedTenantId) setTenantId(savedTenantId);
+      }
     } catch {
-      // Ignore localStorage read errors in SSR/strict envs
+      // Ignore localStorage read errors in SSR
     }
   }, []);
 
@@ -97,24 +128,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     graphNodesCount: 0,
   };
 
+  /**
+   * Handle standard Email / Password Sign In
+   */
   const login = async (email: string, password?: string, chosenTenantId?: string): Promise<boolean> => {
     const selectedTenant = chosenTenantId || tenantId || 'tenant_acme_01';
-    const mockToken = `jwt_token_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+    const generatedToken = `jwt_token_${Math.random().toString(36).substring(2)}_${Date.now()}`;
     const loggedInUser: UserProfile = {
       id: `usr_${Date.now()}`,
       email,
-      name: email.split('@')[0].replace('.', ' ') || 'SaaS User',
-      avatarUrl: DEFAULT_USER.avatarUrl,
+      name: email.split('@')[0].replace('.', ' ') || 'Enterprise User',
+      avatarUrl: undefined,
       tenant_id: selectedTenant,
       role: 'Admin',
     };
 
     setUser(loggedInUser);
-    setToken(mockToken);
+    setToken(generatedToken);
     setTenantId(selectedTenant);
 
     try {
-      localStorage.setItem(STORAGE_KEYS.TOKEN, mockToken);
+      localStorage.setItem(STORAGE_KEYS.TOKEN, generatedToken);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(loggedInUser));
       localStorage.setItem(STORAGE_KEYS.TENANT_ID, selectedTenant);
     } catch {}
@@ -123,24 +157,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+  /**
+   * Handle User Registration
+   */
   const register = async (name: string, email: string, password?: string, tenantName?: string): Promise<boolean> => {
     const newTenantId = `tenant_${(tenantName || 'org').toLowerCase().replace(/\s+/g, '_')}_${Math.random().toString(36).substring(2, 6)}`;
-    const mockToken = `jwt_token_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+    const generatedToken = `jwt_token_${Math.random().toString(36).substring(2)}_${Date.now()}`;
     const newUser: UserProfile = {
       id: `usr_${Date.now()}`,
       email,
       name,
-      avatarUrl: DEFAULT_USER.avatarUrl,
+      avatarUrl: undefined,
       tenant_id: newTenantId,
       role: 'Admin',
     };
 
     setUser(newUser);
-    setToken(mockToken);
+    setToken(generatedToken);
     setTenantId(newTenantId);
 
     try {
-      localStorage.setItem(STORAGE_KEYS.TOKEN, mockToken);
+      localStorage.setItem(STORAGE_KEYS.TOKEN, generatedToken);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
       localStorage.setItem(STORAGE_KEYS.TENANT_ID, newTenantId);
     } catch {}
@@ -149,13 +186,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+  /**
+   * Handle Google OAuth Sign In
+   */
+  const signInWithGoogle = async (): Promise<void> => {
+    await signIn('google', {
+      callbackUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
+    });
+  };
+
+  /**
+   * Clean Logout:
+   * 1. Clears current user and token
+   * 2. Clears localStorage
+   * 3. Signs out of NextAuth (Google/Credentials session)
+   * 4. Resets the guest session ID so guest chat starts cleanly
+   */
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     try {
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
+      localStorage.removeItem(STORAGE_KEYS.TENANT_ID);
     } catch {}
+
+    // Sign out from NextAuth session
+    signOut({ redirect: false }).catch(() => {});
+
     // Reset guest session with a clean ID for anonymous browsing
     resetGuestSessionId();
   }, []);
@@ -193,6 +251,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        signInWithGoogle,
         switchTenant,
         isAuthModalOpen,
         authMode,

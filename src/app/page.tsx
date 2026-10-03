@@ -10,12 +10,12 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { SettingsView } from '@/components/settings/SettingsView';
 import { checkHealth, uploadDocument, sendChatMessage } from '@/lib/api';
 import { ChatMessage, HealthStatus, IngestTask } from '@/types/chat';
-import { Menu, AlertTriangle, X, CheckCircle2, Building2 } from 'lucide-react';
+import { Menu, AlertTriangle, X, CheckCircle2, Building2, LogOut } from 'lucide-react';
 import { formatTimestamp } from '@/lib/utils';
 import { useChatSession } from '@/hooks/useChatSession';
 
 export default function Home() {
-  const { tenantId, token, activeTenant, isAuthenticated } = useAuth();
+  const { user, tenantId, token, activeTenant, isAuthenticated, logout, openAuthModal } = useAuth();
   const {
     activeSessionId,
     guestSessionId,
@@ -197,7 +197,24 @@ export default function Home() {
             {activeTenant.name}
           </span>
         </span>
-        <div className="w-8" />
+        <div>
+          {user ? (
+            <button
+              onClick={logout}
+              className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-colors"
+              title={`Sign out (${user.email})`}
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={() => openAuthModal('login')}
+              className="px-2.5 py-1 rounded-xl bg-blue-600 text-white text-xs font-semibold shadow-xs"
+            >
+              Sign In
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Mobile Overlay */}
