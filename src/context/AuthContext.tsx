@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { TenantInfo, UserProfile } from '@/types/chat';
+import { resetGuestSessionId } from '@/lib/guestSession';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -48,7 +49,7 @@ const DEFAULT_TENANTS: TenantInfo[] = [
 ];
 
 const DEFAULT_USER: UserProfile = {
-  id: 'usr_artin_99',
+  id: 'usr_enterprise_01',
   email: 'admin@acme-corp.ai',
   name: 'Alex Rivera',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
@@ -59,14 +60,14 @@ const DEFAULT_USER: UserProfile = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  TOKEN: 'artin_graphrag_token',
-  USER: 'artin_graphrag_user',
-  TENANT_ID: 'artin_graphrag_tenant_id',
+  TOKEN: 'graphrag_auth_token',
+  USER: 'graphrag_auth_user',
+  TENANT_ID: 'graphrag_tenant_id',
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(DEFAULT_USER);
-  const [token, setToken] = useState<string | null>('jwt_mock_token_secure_artin_2026');
+  const [token, setToken] = useState<string | null>('jwt_mock_token_secure_enterprise_2026');
   const [tenantId, setTenantId] = useState<string>('tenant_acme_01');
   const [availableTenants] = useState<TenantInfo[]>(DEFAULT_TENANTS);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -155,6 +156,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
     } catch {}
+    // Reset guest session with a clean ID for anonymous browsing
+    resetGuestSessionId();
   }, []);
 
   const switchTenant = (newTenantId: string) => {

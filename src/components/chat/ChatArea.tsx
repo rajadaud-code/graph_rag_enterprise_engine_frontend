@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { ChatMessage, VectorContextItem, GraphContextItem } from '@/types/chat';
 
-interface ArtinChatAreaProps {
+interface ChatAreaProps {
   messages: ChatMessage[];
   isLoading: boolean;
   onClearChat: () => void;
@@ -36,7 +36,7 @@ interface ArtinChatAreaProps {
   sessionTitle?: string;
 }
 
-export const ArtinChatArea: React.FC<ArtinChatAreaProps> = ({
+export const ChatArea: React.FC<ChatAreaProps> = ({
   messages,
   isLoading,
   onClearChat,
@@ -215,7 +215,7 @@ export const ArtinChatArea: React.FC<ArtinChatAreaProps> = ({
                 <Sparkles className="w-10 h-10 text-blue-600 dark:text-blue-400 animate-pulse" />
               </div>
               <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-lime-400 text-slate-950 font-mono text-[10px] font-bold shadow-md">
-                Artin v2.0
+                GraphRAG v2.0
               </div>
             </div>
 
@@ -313,7 +313,7 @@ export const ArtinChatArea: React.FC<ArtinChatAreaProps> = ({
                   
                   {/* Sender & Timestamp Header */}
                   <div className="flex items-center gap-2 px-1 text-[11px] text-muted-foreground">
-                    <span className="font-semibold text-foreground">{isUser ? 'You' : 'Artin AI Engine'}</span>
+                    <span className="font-semibold text-foreground">{isUser ? 'You' : 'GraphRAG AI Engine'}</span>
                     <span>•</span>
                     <span className="font-mono text-[10px]">{msg.timestamp}</span>
                     {msg.tenant_id && (

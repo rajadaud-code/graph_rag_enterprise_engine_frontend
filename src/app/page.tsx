@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { ArtinSidebar } from '@/components/layout/ArtinSidebar';
-import { ArtinChatArea } from '@/components/chat/ArtinChatArea';
-import { ArtinChatInput } from '@/components/chat/ArtinChatInput';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { ChatArea } from '@/components/chat/ChatArea';
+import { ChatInput } from '@/components/chat/ChatInput';
 import { IngestModal } from '@/components/ingest/IngestModal';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { SettingsView } from '@/components/settings/SettingsView';
@@ -12,12 +12,20 @@ import { checkHealth, uploadDocument, sendChatMessage } from '@/lib/api';
 import { ChatMessage, HealthStatus, IngestTask } from '@/types/chat';
 import { Menu, AlertTriangle, X, CheckCircle2, Building2 } from 'lucide-react';
 import { formatTimestamp } from '@/lib/utils';
+import { useChatSession } from '@/hooks/useChatSession';
 
 export default function Home() {
-  const { tenantId, token, activeTenant } = useAuth();
+  const { tenantId, token, activeTenant, isAuthenticated } = useAuth();
+  const {
+    activeSessionId,
+    guestSessionId,
+    isMigrating,
+    migrationStatus,
+    setActiveSessionId,
+    startNewGuestSession,
+  } = useChatSession();
 
   const [currentView, setCurrentView] = useState<'chat' | 'settings'>('chat');
-  const [activeSessionId, setActiveSessionId] = useState<string>('sess_today_1');
   const [activeSessionTitle, setActiveSessionTitle] = useState<string>('Exploring Knowledge Graph & Vectors');
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [isHealthLoading, setIsHealthLoading] = useState(false);
@@ -153,9 +161,9 @@ export default function Home() {
   };
 
   const handleNewChat = () => {
-    const newId = `sess_${Date.now()}`;
+    const newId = isAuthenticated ? `sess_${Date.now()}` : startNewGuestSession();
     setActiveSessionId(newId);
-    setActiveSessionTitle('New GraphRAG Inquiry');
+    setActiveSessionTitle(isAuthenticated ? 'New GraphRAG Inquiry' : 'Guest Chat Session');
     setMessages([]);
   };
 
@@ -200,8 +208,8 @@ export default function Home() {
         />
       )}
 
-      {/* Artin Dual-Navigation Sidebar */}
-      <ArtinSidebar
+      {/* Dual-Navigation Sidebar */}
+      <Sidebar
         currentView={currentView}
         onSelectView={(view) => {
           setCurrentView(view);
@@ -240,6 +248,14 @@ export default function Home() {
           </div>
         )}
 
+        {/* Session Migration Notification */}
+        {isMigrating && (
+          <div className="mx-4 mt-3 p-3 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs flex items-center gap-2 shadow-lg shrink-0 z-20 animate-pulse">
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+            <span>Transferring your guest chat history to your authenticated workspace...</span>
+          </div>
+        )}
+
         {successBanner && (
           <div className="mx-4 mt-3 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs flex items-center justify-between shadow-lg shrink-0 z-20">
             <div className="flex items-center gap-2">
@@ -258,7 +274,7 @@ export default function Home() {
         {/* View Switcher: Chat or Settings */}
         {currentView === 'chat' ? (
           <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-            <ArtinChatArea
+            <ChatArea
               messages={messages}
               isLoading={isChatLoading}
               onClearChat={() => setMessages([])}
@@ -267,7 +283,7 @@ export default function Home() {
               sessionTitle={activeSessionTitle}
             />
 
-            <ArtinChatInput
+            <ChatInput
               onSendMessage={handleSendMessage}
               onOpenIngestModal={() => setIsIngestModalOpen(true)}
               isLoading={isChatLoading}

@@ -29,7 +29,7 @@ import {
   PanelLeftOpen
 } from 'lucide-react';
 
-interface ArtinSidebarProps {
+interface SidebarProps {
   currentView: 'chat' | 'settings';
   onSelectView: (view: 'chat' | 'settings') => void;
   onOpenIngestModal: () => void;
@@ -86,7 +86,7 @@ const MOCK_SESSIONS: ChatSession[] = [
   },
 ];
 
-export const ArtinSidebar: React.FC<ArtinSidebarProps> = ({
+export const Sidebar: React.FC<SidebarProps> = ({
   currentView,
   onSelectView,
   onOpenIngestModal,
@@ -223,7 +223,7 @@ export const ArtinSidebar: React.FC<ArtinSidebarProps> = ({
               />
             ) : (
               <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                {user?.name ? user.name.charAt(0) : 'A'}
+                {user?.name ? user.name.charAt(0) : 'U'}
               </div>
             )}
           </button>

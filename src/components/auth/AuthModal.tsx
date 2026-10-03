@@ -12,8 +12,11 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
+import { getExistingGuestSessionId, clearGuestSessionId } from '@/lib/guestSession';
+import { migrateGuestSession } from '@/lib/api';
 
 export const AuthModal: React.FC = () => {
   const {
@@ -35,6 +38,7 @@ export const AuthModal: React.FC = () => {
   const [isCustomTenant, setIsCustomTenant] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -54,19 +58,36 @@ export const AuthModal: React.FC = () => {
     try {
       if (isLogin) {
         await login(email, password, activeTenantId);
-        setSuccess('Successfully authenticated! Connecting to tenant workspace...');
+        
+        // Check for pending guest session to migrate
+        const guestSessionId = getExistingGuestSessionId();
+        if (guestSessionId) {
+          setIsMigrating(true);
+          setSuccess('Authenticated! Transferring guest chat history to your workspace...');
+          const token = localStorage.getItem('graphrag_auth_token') || 'token_auth';
+          const migration = await migrateGuestSession(guestSessionId, token);
+          if (migration.success) {
+            clearGuestSessionId();
+            setSuccess('Welcome back! Your guest chat history has been saved to your account.');
+          }
+        } else {
+          setSuccess('Successfully authenticated! Connecting to tenant workspace...');
+        }
       } else {
         await register(name, email, password, activeTenantId);
         setSuccess('Account created and tenant workspace initialized!');
       }
+
       setTimeout(() => {
         closeAuthModal();
         setSuccess(null);
-      }, 700);
+        setIsMigrating(false);
+      }, 1000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Authentication failed. Please try again.');
     } finally {
       setIsLoading(false);
+      setIsMigrating(false);
     }
   };
 

@@ -234,3 +234,67 @@ export async function sendChatMessage(
 
   throw new ApiError(lastError?.message || 'Network error communicating with Chat engine.');
 }
+
+export interface MigrateSessionResponse {
+  success: boolean;
+  session_id?: string;
+  message?: string;
+  migrated_count?: number;
+}
+
+/**
+ * Migrate guest chat history to an authenticated account session.
+ * Sends guest_session_id and the authenticated token to the backend (/api/auth/migrate-session).
+ */
+export async function migrateGuestSession(
+  guestSessionId: string,
+  token: string
+): Promise<MigrateSessionResponse> {
+  if (!guestSessionId) {
+    return { success: false, message: 'No guest session ID provided.' };
+  }
+
+  const baseUrls = getBaseUrls();
+  let lastError: Error | null = null;
+
+  for (const baseUrl of baseUrls) {
+    // Check both standard backend endpoints
+    const targetUrl = baseUrl.endsWith('/api/v1')
+      ? `${baseUrl}/auth/migrate-session`
+      : `${baseUrl}/api/auth/migrate-session`;
+
+    try {
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          guest_session_id: guestSessionId,
+          token: token,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        return {
+          success: true,
+          session_id: data.session_id || data.new_session_id || guestSessionId,
+          message: data.message || 'Guest chat history successfully migrated.',
+          migrated_count: data.migrated_count,
+        };
+      } else {
+        lastError = new Error(data.detail || data.message || `Migration failed with status ${res.status}`);
+      }
+    } catch (err: unknown) {
+      lastError = err instanceof Error ? err : new Error('Failed to reach migration endpoint.');
+    }
+  }
+
+  return {
+    success: false,
+    message: lastError?.message || 'Unable to connect to session migration endpoint.',
+  };
+}

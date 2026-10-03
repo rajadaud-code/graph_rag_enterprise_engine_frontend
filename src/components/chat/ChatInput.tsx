@@ -12,13 +12,13 @@ import {
   Mic
 } from 'lucide-react';
 
-interface ArtinChatInputProps {
+interface ChatInputProps {
   onSendMessage: (message: string) => Promise<void>;
   onOpenIngestModal: () => void;
   isLoading: boolean;
 }
 
-export const ArtinChatInput: React.FC<ArtinChatInputProps> = ({
+export const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
   onOpenIngestModal,
   isLoading,
