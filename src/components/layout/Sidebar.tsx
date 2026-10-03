@@ -117,10 +117,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const isOffline = status?.includes('unhealthy') || status === 'offline';
 
     return (
-      <div className="flex items-center justify-between text-[11px] py-1 px-2 rounded-lg bg-muted/40 border border-border/60">
+      <div className="flex items-center justify-between text-[11px] py-1.5 px-2.5 rounded-lg bg-muted/40 border border-border/60">
         <div className="flex items-center gap-1.5 min-w-0">
           <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          <span className="font-medium truncate">{name}</span>
+          <span className="font-medium truncate text-foreground">{name}</span>
         </div>
         <span className="flex items-center gap-1 shrink-0 font-mono text-[10px]">
           {isHealthy ? (
@@ -143,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-40 flex bg-card border-r border-border transition-all duration-300 ease-in-out md:static ${
+      className={`fixed inset-y-0 left-0 z-40 flex bg-card border-r border-border transition-transform duration-300 ease-in-out md:static ${
         isOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}
     >
@@ -242,14 +242,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* 2. SECONDARY SESSIONS & HEALTH DRAWER */}
       <div
-        className={`flex flex-col h-full bg-card/60 backdrop-blur-xl transition-all duration-300 ${
+        className={`flex flex-col h-full bg-card transition-[width,opacity] duration-300 ${
           isDrawerCollapsed ? 'w-0 overflow-hidden opacity-0 border-0' : 'w-72'
         }`}
       >
         {/* Drawer Header */}
         <div className="p-4 border-b border-border flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <h2 className="text-sm font-bold tracking-tight leading-tight">
+            <h2 className="text-sm font-bold tracking-tight leading-tight text-foreground">
               Agentic GraphRag
             </h2>
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -305,7 +305,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full pl-8 pr-3 py-2 rounded-xl bg-muted/50 border border-border text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full pl-8 pr-3 py-2 rounded-xl bg-muted/50 border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
         </div>

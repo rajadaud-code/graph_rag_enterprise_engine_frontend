@@ -8,7 +8,7 @@ import { AuthProvider } from '@/context/AuthContext';
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
         <AuthProvider>
           {children}
         </AuthProvider>
